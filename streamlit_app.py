@@ -18,6 +18,30 @@ import streamlit as st
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
+
+def _restore_layout() -> None:
+    """If the repo was uploaded flat (GitHub web upload drops folders), rebuild maors/ and
+    models/ from the files at the repo root so the package imports work unchanged."""
+    import shutil
+    pkg = os.path.join(BASE_DIR, "maors")
+    mods = ["__init__", "constants", "engine", "ml_engine", "models", "pipeline",
+            "recommendations", "validator"]
+    if not os.path.exists(os.path.join(pkg, "__init__.py")) and \
+            os.path.exists(os.path.join(BASE_DIR, "__init__.py")):
+        os.makedirs(pkg, exist_ok=True)
+        for m in mods:
+            src = os.path.join(BASE_DIR, f"{m}.py")
+            if os.path.exists(src):
+                shutil.copy(src, os.path.join(pkg, f"{m}.py"))
+    mdir = os.path.join(BASE_DIR, "models")
+    os.makedirs(mdir, exist_ok=True)
+    for f in os.listdir(BASE_DIR):
+        if f.endswith(".joblib") and not os.path.exists(os.path.join(mdir, f)):
+            shutil.copy(os.path.join(BASE_DIR, f), os.path.join(mdir, f))
+
+
+_restore_layout()
+
 from maors import (MAORSEngine, MAORSMLPredictor, MAORSPipeline, PatientData,  # noqa: E402
                    RISK_CATEGORIES, RISK_FACTORS_CONFIG)
 from maors.validator import PatientValidator  # noqa: E402
